@@ -1,5 +1,7 @@
 
-# Set up API key
+# Assignment
+
+## Set up API key
 
 1. Get an api key: https://platform.openai.com/api-keys
 2. Create a file in your home directory, such as `my-api-key-file`, add this line:
@@ -8,7 +10,7 @@
 export OPENAI_API_KEY=...
 ```
 
-# Install and run
+## Install and run
 
 Load the API key to an environment variable:
 
@@ -25,7 +27,7 @@ pip install -r requirements.txt
 python Assignment_agent\ template.py
 ```
 
-# Pushing to EC2
+## Pushing to EC2
 
 Log into EC2:
 
@@ -54,3 +56,21 @@ scp -i "your-downloaded-key.pem" -r ./* ubuntu@your-ec2-instance.amazonaws.com:/
 
 Then follow the instructions above (Install and run) on the EC2 instance.
 
+# Generate diagram
+
+Prerequisites:
+
+```
+brew install graphviz
+python3 -m venv .venv
+```
+
+Install:
+
+```
+source .venv/bin/activate
+pip install -r requirements.txt
+python scripts/render_flow_diagram.py
+```
+
+It will be rendered at docs/flow_diagram.png.

@@ -1,0 +1,46 @@
+digraph assignment_agent_flow {
+  graph [rankdir=TB, splines=ortho, nodesep=0.35, ranksep=0.45, fontname="Helvetica", fontsize=16, labelloc=t, label="Assignment_agent template.py \u2013 Flow"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#E8F1FF", color="#2F6FED", penwidth=1.2];
+  edge [color="#4B5563", penwidth=1.1, arrowsize=0.8];
+
+  start [label="Start script", fillcolor="#E5E7EB", color="#6B7280"];
+  env [label="Load env vars\nOPENAI_API_KEY (required)"];
+  emb [label="Create embeddings\nOpenAIEmbeddings()"];
+  faiss [label="Load FAISS vector store\nFAISS.load_local('.', embeddings)"];
+  retriever [label="Create retriever\nvector.as_retriever(k=5)"];
+
+  tool_retr [label="Create tool\namazon_product_search", fillcolor="#FFF7ED", color="#C2410C"];
+  tool_web [label="Create tool\nTavilySearch(max_results=5)", fillcolor="#FFF7ED", color="#C2410C"];
+  tools [label="Assemble tools list\n[amazon_product_search, search_tavily]"];
+
+  prompt [label="Create local ReAct PromptTemplate"];
+  llms [label="Init LLMs\nChatOpenAI(streaming=True)"];
+  agent [label="Create ReAct agent\ncreate_react_agent(llm, tools, prompt)"];
+  exec [label="Wrap in AgentExecutor\nmax_iterations=25\nhandle_parsing_errors"];
+  session_dict [label="Init session_memory dict", fillcolor="#E5E7EB", color="#6B7280"];
+  getmem [label="get_memory(session_id)\nreturns ChatMessageHistory", fillcolor="#E5E7EB", color="#6B7280"];
+  history [label="Wrap with RunnableWithMessageHistory\ninput='input'\nhistory='chat_history'"];
+  ui [label="Build Gradio UI\nTextbox + Button"];
+  launch [label="Gradio launched on\n0.0.0.0:7860", fillcolor="#F3F4F6", color="#6B7280"];
+
+  submit [label="User submits message", fillcolor="#E5E7EB", color="#6B7280"];
+  chat [label="chat_with_agent(user_input, request)"];
+  sid [label="Derive session_id\nrequest.session_hash or 'default'", fillcolor="#E5E7EB", color="#6B7280"];
+  invoke [label="agent_with_chat_history.invoke\n{input: user_input}"];
+
+  branch [label="Response has 'output'?", shape=diamond, fillcolor="#FEF3C7", color="#92400E"];
+  post [label="Post-process iteration-limit message", fillcolor="#E5E7EB", color="#6B7280"];
+  return_ok [label="Return output to Gradio", fillcolor="#DCFCE7", color="#15803D"];
+  return_err [label="Return error string", fillcolor="#FEE2E2", color="#B91C1C"];
+
+  start -> env -> emb -> faiss -> retriever -> tool_retr -> tool_web -> tools -> prompt -> llms -> agent -> exec -> session_dict -> getmem -> history -> ui -> submit -> chat -> sid -> invoke -> branch;
+  ui -> launch [style=dashed];
+
+  branch -> post [label="Yes"];
+  post -> return_ok;
+  branch -> return_err [label="No"];
+
+  return_ok -> submit [style=dashed, color="#9CA3AF"];
+  return_err -> submit [style=dashed, color="#9CA3AF"];
+}
+
