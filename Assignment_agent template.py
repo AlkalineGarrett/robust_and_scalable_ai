@@ -9,7 +9,6 @@ from langchain_classic.memory import ConversationSummaryMemory
 from langchain_openai import ChatOpenAI
 
 # Perform necessary imports for creating agents
-from langchain_classic import hub  # Used to pull predefined prompts from LangChain Hub
 from langchain_classic.agents import AgentExecutor, create_react_agent
 from langchain_community.chat_message_histories import ChatMessageHistory # Used to store chat history in memory
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -48,15 +47,34 @@ amazon_product_search = create_retriever_tool(
     description="Search for information about Amazon products. For any questions related to Amazon products, this tool must be used.",
 )
 
-# Import necessary classes from LangChain for Tavily integration
-from langchain_community.tools.tavily_search import TavilySearchResults
+# Tavily web search tool (updated; avoids deprecated langchain_community wrapper)
+from langchain_tavily import TavilySearch
 
-# Create Tavily web search tool
-search_tavily = TavilySearchResults(max_results=5)
+search_tavily = TavilySearch(max_results=5)
 
-# hwchase17/react is a prompt template designed for ReAct-style
-# conversational agents.
-prompt = hub.pull("hwchase17/react") # pull "hwchase17/react" prompt from langchain hub
+# Avoid pulling public prompts from the Hub (blocked by default for safety).
+# Use a local ReAct prompt instead.
+from langchain_core.prompts import PromptTemplate
+
+prompt = PromptTemplate.from_template(
+    """You are a helpful assistant. You have access to the following tools:
+
+{tools}
+
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original question
+
+Question: {input}
+{agent_scratchpad}"""
+)
 
 ## Create a list of tools: retriever_tool and search_tool
 tools = [amazon_product_search, search_tavily] # TODO: Create a list of tools based on search_tavily and amazon_product_search.
@@ -158,4 +176,4 @@ with gr.Blocks() as app:
     submit_button.click(chat_with_agent, inputs=input_box, outputs=output_box)
 
 # Launch the Gradio app
-app.launch(debug=True, share=True)
+app.launch(server_name="0.0.0.0", server_port=7860, debug=True, share=False)
